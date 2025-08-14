@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'RISCV32 Core Docs'
+project = 'RISCV32 Core'
 copyright = '2025, RISCV32 Core'
 author = 'RISCV32 Core'
 

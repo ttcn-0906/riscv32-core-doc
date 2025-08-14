@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-RISCV32 Core Docs documentation
+RISCV32 Core Documentation
 ===============================
 
 Add your content using ``reStructuredText`` syntax. See the
@@ -15,3 +15,4 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
+   core_design_index.rst
