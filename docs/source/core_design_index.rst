@@ -9,3 +9,4 @@ Description
    :caption: Contents:
 
    ex_stage.md
+   mem_stage.md
