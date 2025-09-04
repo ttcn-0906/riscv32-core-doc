@@ -20,16 +20,17 @@ In RISC-V core, the Load Store Unit (LSU) is a critical pipeline component respo
 
 #### Address and Data Procressing
 
-**Address:** LSU will control address which will be sent into MMU be mutipler of 4. **Data:** LSU use `mask` to control which byte of write data are needed to be writen into memory.
+**Address:** LSU will control address which will be sent into MMU be mutiple of 4.
+**Data:** LSU use `mask` to control which byte of write data are needed to be writen into memory.
 
 #### LSU Queue
 
-Action:
+Queue store data which generate according to input opcode and singal.
 
 - Push: input instruction is valid, and misaligned condition.
 - Pop: when memory return finished signal.
 
-Input Data:
+Store Data:
 
 |Signal                     |Width |Description            |
 |---------------------------|------|-----------------------|
@@ -69,7 +70,7 @@ Manages the timing of writeback operations to the register file
 
 #### Exception Handling
 
-In this part, LSU will receive signal `load_fault` and `store_fault` which is sended from MMU. Then, generates exceptions:
+In this part, LSU will receive signal `load_fault` and `store_fault` which is sended from MMU. Then, LSU will generate exception signal with current load or store instruction.
 
 ## MMU (Memory Management Unit)
 
@@ -113,7 +114,7 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 
 | Bit Position | Macro Name | Description |
 |--------------|------------|-------------|
-|0 | PRESENT | Page is present in memory |
+|0 | PRESENT | Page is valid in memory |
 |1 | READ | Page has read permission |
 |2 | WRITE | Page has write permission |
 |3 | EXEC | Page has execute permission |
