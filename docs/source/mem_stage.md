@@ -4,12 +4,8 @@
 
 In RISC-V core, the Load Store Unit (LSU) is a critical pipeline component responsible for controlling load and store instructions and handling various error conditions, particularly address misalignment. The LSU acts as an interface between the processor's execution stage and the Memory Management Unit (MMU), ensuring proper data transfer, address calculation, and exception handling.
 
-### Design Principle
-
-- **LSU Queue:** The `LSU` implement internal queue to store all necessary dtat for memory operactions. 
-
+- **LSU Queue:** The `LSU` implement internal queue to store all necessary dtat for memory operactions.
 - **Address Misaligned:** In this part, we want LSU detect misaligned error and solve it. Therefore, we need to record every condition, including memory addresses, data values, instruction types, and control signals.
-
 - **Writeback Data Calculation:** This part is for load instruction. In our design, lsu will sent read word signal to mmu even if instruction is `WB` or `WH`. Therefore, it needs caculate word data after lsu get terget data.
 
 ### Implement Detail
@@ -77,36 +73,10 @@ In this part, LSU will receive signal `load_fault` and `store_fault` which is se
 
 ## MMU (Memory Management Unit)
 
-In RISC-V core, MMU is responsible to translate virtual address into physical address. The translaction process needs some units to help MMU.
-
-- Cache Control Unit
-- Table Lookagead Buffer
-- Page Table Walker
-
-### Virtual Memory
-
-We use Sv32 as our virtual address design. Sv32 use two-level page to translate virtual address into physical address. This is its virtual address structure:
-
-|31 - 22               |21 - 12                |11 - 0|
-|----------------------|-----------------------|------|
-|First Level Page Index|Second Level Page Index|Offset|
-
-**SATP (Supervisor Address Translation and Protection):** It is a register to store virtual address information and control page management, and it maintain by `CSR`. This is Satp structure:
-
-|31     |30 - 22    |19 - 0 |
-|-------|-----------|-------|
-|MODE   |ASID       |PPN    |
-
-- MODE: virtual address support in current.
-- ASID: address space identifier to control that address can be used in current process.
-- PPN: first level physical page number.
-
-### Design Principle
+In RISC-V core architectures, the Memory Management Unit (MMU) serves as a critical component responsible for translating virtual addresses into physical addresses. Beyond basic address translation, the MMU provides essential security and reliability features through comprehensive error detection mechanisms, including address range validation and page accessibility verification. Our MMU design implements a three-tier architecture comprising specialized units that work in concert to deliver efficient virtual memory management:
 
 - **Table Lookahead Buffer (TLB):** TLB store a history data of pages. It returns value if page was requested, or sent request signal into TLB to find correct page and its data.
-
 - **Page Table Walker (PTW):** PTW can find the correct page with page index of virtual address and calculate physical address by page data. Then, page fault exceptions also are detected in this unit.
-
 - **Cache Interaction:** this unit is used to control signal of cache interaction.
 
 ### Implement Detail
@@ -130,3 +100,36 @@ Page table walker (PTW) can search page table and detect page errror condition. 
 |FIRST_LEVEL    |search first level page     |
 |SECOND_LEVEL   |search second level page    |
 |UPDATE         |get page data and update TLB|
+
+### Virtual Memory (Sv32)
+
+We use **Sv32** as our virtual address design. Sv32 use two-level page to translate virtual address into physical address. This is its **virtual address structure:**
+
+|31 - 22               |21 - 12                |11 - 0|
+|----------------------|-----------------------|------|
+|First Level Page Index|Second Level Page Index|Offset|
+
+**Page Table Structure:**
+
+| Bit Position | Macro Name | Description |
+|--------------|------------|-------------|
+|0 | PRESENT | Page is present in memory |
+|1 | READ | Page has read permission |
+|2 | WRITE | Page has write permission |
+|3 | EXEC | Page has execute permission |
+|4 | USER | Page is accessible in user mode |
+|5 | GLOBAL | Page is global (not flushed on context switch) |
+|6 | ACCESSED | Page has been accessed |
+|7 | DIRTY | Page has been modified |
+|9:8| SOFT | Software-defined bits (2 bits) |
+|29:10|ENTRY| Physical page number|
+
+**SATP (Supervisor Address Translation and Protection):** It is a register to store virtual address information and control page management, and it maintain by `CSR`. This is Satp structure:
+
+|31     |30 - 22    |19 - 0 |
+|-------|-----------|-------|
+|MODE   |ASID       |PPN    |
+
+- MODE: virtual address support in current.
+- ASID: address space identifier to control that address can be used in current process.
+- PPN: first level physical page number.
