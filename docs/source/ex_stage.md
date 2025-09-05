@@ -40,3 +40,102 @@ This divider is built around the **SRT division algorithm** to achieve high perf
     - Restore remainder and quotient if needed.
     - The redundant quotient digits are converted into a standard two's complement binary number.
     - The final remainder (in its carry-save form) is converted into a standard binary representation.
+
+## FPU
+
+### 1. Features
+
+The FPU module supports IEEE 754 standard RV32F floating-point arithmetic.
+
+#### Supported Data Types
+*   **Single Precision** (32-bit floating point)
+*   32-bit Signed and Unsigned Integers for conversion operations.
+
+#### Supported Operations
+*   **Arithmetic:**
+    *   `fadd.s` ( Addition )
+    *   `fsub.s` ( Subtraction )
+    *   `fmul.s` ( Multiplication )
+    *   `fdiv.s` ( Division )
+    *   `fsqrt.s` ( Square Root )
+*   **Comparison:**
+    *   `feq.s` ( Compare equal )
+    *   `flt.s` ( Compare less than )
+    *   `fle.s` ( Compare less than or equal )
+    *   `fmin.s` ( Compare and output smaller floating-point number )
+    *   `fmax.s` ( Compare and output larger floating-point number )
+*   **Conversions:**
+    *   `fcvt.w.s` ( Convert a floating-point number to a signed 32-bit integer )
+    *   `fcvt.wu.s` ( Convert a floating-point number to a unsigned 32-bit integer )
+    *   `fcvt.s.w` ( Convert a signed 32-bit integer to a floating-point number )
+    *   `fcvt.s.wu` ( Convert a unsigned 32-bit integer to a floating-point number )
+*   **Fused:**
+    *   `fmadd.s` ( Addition after Multiplication )
+    *   `fmsub.s` ( Subtraction after Multiplication )
+    *   `fnmsub.s` ( Addition after (negative)Multiplication )
+    *   `fnmadd.s` ( Subtraction after (negative)Multiplication )
+*   **Sign operation:**
+    *   `fsgnj.s` ( f[rd] = {f[rs2][31], f[rs1][30:0]} )
+    *   `fsgnjn.s` ( f[rd] = {~f[rs2][31], f[rs1][30:0]} )
+    *   `fsgnjx.s` ( f[rd] = {f[rs1][31] ^ f[rs2][31], f[rs1][30:0]} )
+*   **Others:**
+    *   `fclass.s` ( Classify floating-point number's status )
+
+#### IEEE 754 Compliance
+*   **Rounding Modes:**
+    *   Round to Nearest, ties to Even (RNE) - _Default_
+    *   Round Towards Zero (RTZ)
+    *   Round Down (towards -∞) (RDN)
+    *   Round Up (towards +∞) (RUP)
+    *   Round to Nearest, ties to Max Magnitude (RMM)
+*   **Exception Flags:**
+    *   `Invalid Operation` (NV)
+    *   `Division by Zero` (DZ)
+    *   `Overflow` (OF)
+    *   `Underflow` (UF)
+    *   `Inexact` (NX)
+
+### 2. Port specification
+
+#### Input ports
+| Signal    | Width | Description               |
+| --------- | ----- | ------------------------- |
+| clk       | 1     | clock signal              |
+| rst_n     | 1     | reset signal              |
+| FPU_start | 1     | start signal for the FPU  |
+| opcode    | 7     | opcode of the instruction |
+| func7     | 7     | func7 of the instruction  |
+| func3     | 3     | func3 of the instruction  |
+| rs2       | 5     | rs2 of the instruction    |
+| frm       | 3     | rounding mode from fcsr   |
+| operand_a | 32    | rs1's content             |
+| operand_b | 32    | rs2's content             |
+| operand_c | 32    | rs3's content             |
+
+#### Output ports
+| Signal     | Width | Description                      |
+| ---------- | ----- | -------------------------------- |
+| result_out | 32    | FPU's result                     |
+| fflags     | 5     | Exception flags of the operation |
+| FPU_done   | 1     | finish signal of the FPU         |
+
+
+
+### 3. Architecture
+
+The FPU is designed with a top-down, modular approach. The `FPU_Top` module acts as the central hub that decodes incoming signals and dispatches them to the appropriate functional unit.
+
+#### Module breakdown
+*   `FPU_Top.v`: Top-level FPU module that controls all submodules.
+*   `SP_Decoder.v`: Decodes FP numbers.
+*   `SP_Encoder.v`: Encodes FP numbers.
+*   `SP_Adder.v`: Performs floating-point addition and subtraction.
+*   `SP_Multiplier.v`: Performs floating-point multiplication.
+*   `SP_Divider.v`: Performs floating-point division.
+*   `SP_Sqrt.v`: Performs floating-point square root.
+*   `SP_Compare.v`: Compares two floating-point numbers.
+*   `SP_Min_Max.v`: Compares two floating-point numbers and output a floating-point number.
+*   `SP_Convert.v`: Handles all conversions between FP and integer.
+*   `SP_Fused.v`: Handles fused operation.
+*   `SP_Fsgnj.v`: Handles sign operation.
+*   `SP_Classifier.v`: Handles `fclass.s` operation.
