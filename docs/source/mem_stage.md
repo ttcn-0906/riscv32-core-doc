@@ -76,9 +76,15 @@ In this part, LSU will receive signal `load_fault` and `store_fault` which is se
 
 In RISC-V core architectures, the Memory Management Unit (MMU) serves as a critical component responsible for translating virtual addresses into physical addresses. Beyond basic address translation, the MMU provides essential security and reliability features through comprehensive error detection mechanisms, including address range validation and page accessibility verification. Our MMU design implements a three-tier architecture comprising specialized units that work in concert to deliver efficient virtual memory management:
 
-- **Table Lookahead Buffer (TLB):** TLB store a history data of pages. It returns value if page was requested, or sent request signal into TLB to find correct page and its data.
-- **Page Table Walker (PTW):** PTW can find the correct page with page index of virtual address and calculate physical address by page data. Then, page fault exceptions also are detected in this unit.
-- **Cache Interaction:** this unit is used to control signal of cache interaction.
+### Architecture
+
+![image](./images/MMU_structure.jpeg)
+
+Modules:
+
+- `mmu_tlb.v` : TLB store a history data of pages. It returns value if page was requested, or sent request signal into TLB to find correct page and its data.
+- `mmu_ptw.v` : PTW can find the correct page with page index of virtual address and calculate physical address by page data. Then, page fault exceptions also are detected in this unit.
+- `mmu_cache_control.v` : cache control is interface for Dcache and Icache. It receives available signal from cache and sents control signal such as valid signal to control MMU current request is finished.
 
 ### Implement Detail
 

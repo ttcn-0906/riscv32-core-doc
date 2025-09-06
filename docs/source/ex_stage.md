@@ -139,3 +139,35 @@ The FPU is designed with a top-down, modular approach. The `FPU_Top` module acts
 *   `SP_Fused.v`: Handles fused operation.
 *   `SP_Fsgnj.v`: Handles sign operation.
 *   `SP_Classifier.v`: Handles `fclass.s` operation.
+
+## ALU
+
+The ALU supports basic arithmetic and shifter operations for the RISC-V architecture. We use the `ALU_top` module to translate the decoded results from the CPU into `ALU` opcodes. Within the ALU module, a barrel shifter is used to handle shift operations instead of relying on the `<<` operator.
+
+### Support Operation
+
+- **ADD** : A+B
+- **SUB** : A-B
+- **AND** : A AND B
+- **OR**  : A OR B
+- **XOR** : A XOR B
+- **SLL** : Shift left logical
+- **SRL** : Shift right logical
+- **SRA** : Shift right arithmetic
+- **SLT** : Less than (Signed)
+- **SLTU** : Less than (Unsigned)
+
+### I/O Ports
+
+| Signal     | Width | Type   | Description                      |
+| ---------- | ----- | ------ | -------------------------------- |
+| Ctrl       | 4     | Input  | Control opcode for ALU           |
+| a          | 32    | Input  | rs1 data value                   |
+| b          | 32    | Input  | rs2 data value                   |
+| Out        | 32    | Output | Result value                     |
+
+### Modules
+
+- `ALU_top.v` : Interface of ALU and pipeline CPU.
+- `ALU.v` : Combine arithmetic operation and shift operation.
+- `ALU_barrel_shifter.v` : Handle shifter operation.
