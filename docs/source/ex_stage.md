@@ -1,10 +1,67 @@
 # Execute Stage
 
-## Multiplier
+## MUL/DIV
+
+### 1. Features
+
+The MUL and DIV modules supports RV32M arithmetic.
+
+#### Supported Operations
+
+- `mul` ( Multiplication, lower 32 bits )
+- `mulh` ( Multiplication, higher 32 bits (signed x signed) )
+- `mulhsu` ( Multiplication, higher 32 bits (signed x unsigned) )
+- `mulhu` ( Multiplication, higher 32 bits (unsigned x unsigned) )
+
+- `div` ( Division (signed) )
+- `divu` ( Division (unsigned) )
+- `rem` ( Remainder (signed) )
+- `remu` ( Remainder (unsigned) )
+
+### 2. Port specification
+
+#### Input ports
+| Signal        | Width | Description                  |
+| ------------- | ----- | ---------------------------- |
+| clk           | 1     | clock signal                 |
+| rst_n         | 1     | reset signal                 |
+| MUL_DIV_start | 1     | start signal for the MUL/DIV |
+| MUL_DIV_ctrl  | 3     | func3 of the instruction     |
+| data1         | 32    | rs1's content                |
+| data2         | 32    | rs2's content                |
+
+#### Output ports
+| Signal       | Width | Description                      |
+| ------------ | ----- | -------------------------------- |
+| MUL_DIV_out  | 32    | MUL/DIV's result                 |
+| MUL_DIV_done | 1     | finish signal of the MUL/DIV     |
+
+### 3. Architecture
+
+The `MUL_DIV_top` module acts as the central control unit that decodes incoming signals and dispatches them to the appropriate multiplier or divider unit for the correct operation.
+
+#### Module breakdown
+
+- `MUL_DIV_top.v`: Top-level module that controls multiplier and divider unit.
+- `WallaceMultiplier.v`: Performs multiplication.
+    - `Booth4Decode.v`: Module for partial product generation using Booth's algorithm.
+    - `Compressor32.v`: 64-bit 3-to-2 compressor for partial product reduction.
+    - `Compressor42.v`: 64-bit 4-to-2 compressor for partial product reduction.
+    - `MUL_Reg.v`: Internal register for multiplier
+- `SRTDivider.v`: Performs division and remainder.
+    - `DivideLeftShift.v`: Module for normalizing operands.
+    - `QuotientSelect`: Module for selecting the quotient during division.
+    - `DIV_Reg.v`: Internal register for divider.
+
+### 4. Design Detail
+
+#### Multiplier
 
 The 32-bit Multiplier is a dedicated functional unit designed to perform high-speed multiplication for the RISC-V instruction set architecture. Its primary purpose is to provide the required `MUL`, `MULH`, `MULHSU`, and `MULHU` operations.
 
-### Design Rationale
+![image](./images/MUL_structure.jpeg)
+
+##### Design Rationale
 
 This multiplier employs a combination of the **Radix-4 Booth algorithm** and a **Wallace Tree structure** to achieve high performance and efficient hardware utilization.
 
@@ -13,25 +70,27 @@ This multiplier employs a combination of the **Radix-4 Booth algorithm** and a *
 
 By combining these two techniques, the multiplier minimizes the number of terms to sum, then efficiently sums them in a parallel, non-carry-propagating manner.
 
-### Functional Breakdown
+##### Functional Breakdown
 
 - **Radix-4 Booth Encoding & Partial Product Generation:** This initial stage prepares the multiplicand (rs1) and multiplier (rs2) based on the specific RISC-V instruction. The 32-bit multiplier is fed into the **Radix-4 Booth Decoder**. This decoder examines overlapping groups of 3 bits of the multiplier (including an implicit trailing zero) to generate 34 bits data for each partial product (1 sign bit + 32 data bits).
 Based on the 34 bits data, the actual partial product rows are generated. Since Radix-4 processes two bits at a time, 17 partial products are generated. These partial products are already appropriately shifted according to their bit position.
-- **Wallace Tree Reduction:** The numerous partial product rows are then fed into the Wallace Tree. This tree is composed of a 3-to-2 compressor and 3 layers of 4-to-2 compressors. In each layer, three input rows are reduced to two output rows without immediate carry propagation across the full width. This process continues until only two rows remain. The Wallace tree is pipelined itself, meaning it may span multiple clock cycles, with pipeline registers inserted between layers of compressors.
+- **Wallace Tree Reduction:** The numerous partial product rows are then fed into the Wallace Tree. This tree is composed of a 3-to-2 compressor and 3 layers of 4-to-2 compressors. In each layer, four input rows are reduced to two output rows without immediate carry propagation across the full width. This process continues until only two rows remain. The Wallace tree is pipelined itself, meaning it may span multiple clock cycles, with pipeline registers inserted between layers of compressors.
 - **Final Summation:** The two remaining 64-bit vectors represent the complete 64-bit product in carry-save form. These two vectors are then fed into an adder. This is the only stage where full carry propagation occurs across the entire width of the 64-bit product.
 
-## Divider
+#### Divider
 
 The Radix-4 SRT Divider is a dedicated functional unit designed to perform high-speed integer division for the RISC-V instruction set. Its primary purpose is to efficiently compute the quotient and remainder for all `DIV`, `DIVU`, `REM`, and `REMU` operations.
 
-### Design Rationale
+![image](./images/DIV_structure.jpeg)
+
+##### Design Rationale
 
 This divider is built around the **SRT division algorithm** to achieve high performance. The SRT algorithm is a family of digit-recurrence algorithms that determine multiple bits of the quotient in each clock cycle, thereby accelerating the division process.
 
 - **Radix-4:** The divider generates two quotient bits at a time. It does this by using a base-4 representation internally, where each quotient digit can take on values from a redundant set, `{-2, -1, 0, 1, 2}`. Processing two bits at a time drastically reduces the number of iterations needed to complete a 32-bit division.
 - **Redundancy:** The use of a redundant quotient digit set is the key to the SRT algorithm's speed. It allows the divider to select the next quotient digit based on only a few of the most significant bits of the partial remainder, without waiting for the slow process of full carry propagation. This simplifies the decision-making logic and allows the core iterative loop to run at a higher clock speed.
 
-### Functional Breakdown
+##### Functional Breakdown
 
 - **Pre-processing and Normalization:** Before the iterative process begins, the dividend and divisor are prepared and represented as 64-bit numbers. A key step is normalization, where the divisor is left-shifted until its most significant `1` bit is at a predetermined position. The dividend is shifted by the same amount, and the number of shifts is recorded. This ensures the operands are properly aligned for the SRT iterations and handles cases with leading zeros efficiently.
 - **Core Iterative Loop:** Main part of the SRT divider, implemented as a multi-cycle iterative loop. For each iteration 2 bits of quotient in redundant form are generated, and the remainder is updated. Crucially, the additions and subtractions are performed using a Carry-Save Adder (CSA), avoiding the long carry-propagation delay of a standard adder. The partial remainder is stored in a carry-save format to facilitate this fast addition.
