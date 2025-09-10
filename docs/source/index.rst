@@ -10,6 +10,10 @@ Add your content using ``reStructuredText`` syntax. See the
 `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
 documentation for details.
 
+.. image:: images/riscv32-core-arch.png
+   :alt: RISCV32 Core Block Diagram
+   :align: center
+   :scale: 36%
 
 .. toctree::
    :maxdepth: 2
