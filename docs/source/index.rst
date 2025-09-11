@@ -7,6 +7,7 @@ RISCV32 Core Documentation
 ===============================
 
 Here is the block diagram of the core:
+
 .. image:: images/riscv32-core-arch.png
    :alt: RISCV32 Core Block Diagram
    :align: center
