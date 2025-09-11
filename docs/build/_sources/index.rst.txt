@@ -19,8 +19,7 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
-   core_design_index
-		Memory Stage
-		   Dcache
-		   Icache
-		   Arbiter
+   core_design_index.rst
+   Dcache.rst
+   Icache.rst
+   Arbiter.rst

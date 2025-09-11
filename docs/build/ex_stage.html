@@ -1,0 +1,555 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Execute Stage &mdash; RISCV32 Core  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Memory Stage" href="mem_stage.html" />
+    <link rel="prev" title="Instruction Fetch Stage" href="if_stage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RISCV32 Core
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="core_design_index.html">RISCV32 Core Design</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="if_stage.html">Instruction Fetch Stage</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Execute Stage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mul-div">MUL/DIV</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#features">1. Features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#port-specification">2. Port specification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#architecture">3. Architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#design-detail">4. Design Detail</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fpu">FPU</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id3">1. Features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">2. Port specification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id8">3. Architecture</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#alu">ALU</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#support-operation">Support Operation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#i-o-ports">I/O Ports</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modules">Modules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mem_stage.html">Memory Stage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Dcache.html">Dcache</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Icache.html">Icache</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Arbiter.html">MIG &amp; Cache Interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RISCV32 Core</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="core_design_index.html">RISCV32 Core Design</a></li>
+      <li class="breadcrumb-item active">Execute Stage</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ex_stage.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="execute-stage">
+<h1>Execute Stage<a class="headerlink" href="#execute-stage" title="Link to this heading"></a></h1>
+<section id="mul-div">
+<h2>MUL/DIV<a class="headerlink" href="#mul-div" title="Link to this heading"></a></h2>
+<section id="features">
+<h3>1. Features<a class="headerlink" href="#features" title="Link to this heading"></a></h3>
+<p>The MUL and DIV modules supports RV32M arithmetic.</p>
+<section id="supported-operations">
+<h4>Supported Operations<a class="headerlink" href="#supported-operations" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mul</span></code> ( Multiplication, lower 32 bits )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mulh</span></code> ( Multiplication, higher 32 bits (signed x signed) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mulhsu</span></code> ( Multiplication, higher 32 bits (signed x unsigned) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mulhu</span></code> ( Multiplication, higher 32 bits (unsigned x unsigned) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">div</span></code> ( Division (signed) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">divu</span></code> ( Division (unsigned) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rem</span></code> ( Remainder (signed) )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remu</span></code> ( Remainder (unsigned) )</p></li>
+</ul>
+</section>
+</section>
+<section id="port-specification">
+<h3>2. Port specification<a class="headerlink" href="#port-specification" title="Link to this heading"></a></h3>
+<section id="input-ports">
+<h4>Input ports<a class="headerlink" href="#input-ports" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Width</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>clk</p></td>
+<td><p>1</p></td>
+<td><p>clock signal</p></td>
+</tr>
+<tr class="row-odd"><td><p>rst_n</p></td>
+<td><p>1</p></td>
+<td><p>reset signal</p></td>
+</tr>
+<tr class="row-even"><td><p>MUL_DIV_start</p></td>
+<td><p>1</p></td>
+<td><p>start signal for the MUL/DIV</p></td>
+</tr>
+<tr class="row-odd"><td><p>MUL_DIV_ctrl</p></td>
+<td><p>3</p></td>
+<td><p>func3 of the instruction</p></td>
+</tr>
+<tr class="row-even"><td><p>data1</p></td>
+<td><p>32</p></td>
+<td><p>rs1’s content</p></td>
+</tr>
+<tr class="row-odd"><td><p>data2</p></td>
+<td><p>32</p></td>
+<td><p>rs2’s content</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="output-ports">
+<h4>Output ports<a class="headerlink" href="#output-ports" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Width</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MUL_DIV_out</p></td>
+<td><p>32</p></td>
+<td><p>MUL/DIV’s result</p></td>
+</tr>
+<tr class="row-odd"><td><p>MUL_DIV_done</p></td>
+<td><p>1</p></td>
+<td><p>finish signal of the MUL/DIV</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="architecture">
+<h3>3. Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">MUL_DIV_top</span></code> module acts as the central control unit that decodes incoming signals and dispatches them to the appropriate multiplier or divider unit for the correct operation.</p>
+<section id="module-breakdown">
+<h4>Module breakdown<a class="headerlink" href="#module-breakdown" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MUL_DIV_top.v</span></code>: Top-level module that controls multiplier and divider unit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WallaceMultiplier.v</span></code>: Performs multiplication.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Booth4Decode.v</span></code>: Module for partial product generation using Booth’s algorithm.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Compressor32.v</span></code>: 64-bit 3-to-2 compressor for partial product reduction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Compressor42.v</span></code>: 64-bit 4-to-2 compressor for partial product reduction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MUL_Reg.v</span></code>: Internal register for multiplier</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SRTDivider.v</span></code>: Performs division and remainder.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">DivideLeftShift.v</span></code>: Module for normalizing operands.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QuotientSelect</span></code>: Module for selecting the quotient during division.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DIV_Reg.v</span></code>: Internal register for divider.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="design-detail">
+<h3>4. Design Detail<a class="headerlink" href="#design-detail" title="Link to this heading"></a></h3>
+<section id="multiplier">
+<h4>Multiplier<a class="headerlink" href="#multiplier" title="Link to this heading"></a></h4>
+<p>The 32-bit Multiplier is a dedicated functional unit designed to perform high-speed multiplication for the RISC-V instruction set architecture. Its primary purpose is to provide the required <code class="docutils literal notranslate"><span class="pre">MUL</span></code>, <code class="docutils literal notranslate"><span class="pre">MULH</span></code>, <code class="docutils literal notranslate"><span class="pre">MULHSU</span></code>, and <code class="docutils literal notranslate"><span class="pre">MULHU</span></code> operations.</p>
+<p><img alt="image" src="_images/MUL_structure.jpeg" /></p>
+<section id="design-rationale">
+<h5>Design Rationale<a class="headerlink" href="#design-rationale" title="Link to this heading"></a></h5>
+<p>This multiplier employs a combination of the <strong>Radix-4 Booth algorithm</strong> and a <strong>Wallace Tree structure</strong> to achieve high performance and efficient hardware utilization.</p>
+<ul class="simple">
+<li><p><strong>Radix-4 Booth Decoding:</strong> The Booth algorithm is a multiplication technique that reduces the number of partial products that need to be summed. For a 32-bit multiplier, using Radix-4 effectively halves the number of partial products compared to a simple bit-by-bit multiplication. This simplification is crucial as it directly translates to less hardware in the subsequent summation stages.</p></li>
+<li><p><strong>Wallace Tree:</strong> A Wallace Tree is a highly optimized carry-save adder (CSA) tree that efficiently reduces a large number of partial product rows to just two rows in a logarithmic number of steps. Its advantage lies in its ability to avoid full carry propagation in its intermediate stages, thus keeping the combinational delay low per level of the tree.</p></li>
+</ul>
+<p>By combining these two techniques, the multiplier minimizes the number of terms to sum, then efficiently sums them in a parallel, non-carry-propagating manner.</p>
+</section>
+<section id="functional-breakdown">
+<h5>Functional Breakdown<a class="headerlink" href="#functional-breakdown" title="Link to this heading"></a></h5>
+<ul class="simple">
+<li><p><strong>Radix-4 Booth Encoding &amp; Partial Product Generation:</strong> This initial stage prepares the multiplicand (rs1) and multiplier (rs2) based on the specific RISC-V instruction. The 32-bit multiplier is fed into the <strong>Radix-4 Booth Decoder</strong>. This decoder examines overlapping groups of 3 bits of the multiplier (including an implicit trailing zero) to generate 34 bits data for each partial product (1 sign bit + 32 data bits).
+Based on the 34 bits data, the actual partial product rows are generated. Since Radix-4 processes two bits at a time, 17 partial products are generated. These partial products are already appropriately shifted according to their bit position.</p></li>
+<li><p><strong>Wallace Tree Reduction:</strong> The numerous partial product rows are then fed into the Wallace Tree. This tree is composed of a 3-to-2 compressor and 3 layers of 4-to-2 compressors. In each layer, four input rows are reduced to two output rows without immediate carry propagation across the full width. This process continues until only two rows remain. The Wallace tree is pipelined itself, meaning it may span multiple clock cycles, with pipeline registers inserted between layers of compressors.</p></li>
+<li><p><strong>Final Summation:</strong> The two remaining 64-bit vectors represent the complete 64-bit product in carry-save form. These two vectors are then fed into an adder. This is the only stage where full carry propagation occurs across the entire width of the 64-bit product.</p></li>
+</ul>
+</section>
+</section>
+<section id="divider">
+<h4>Divider<a class="headerlink" href="#divider" title="Link to this heading"></a></h4>
+<p>The Radix-4 SRT Divider is a dedicated functional unit designed to perform high-speed integer division for the RISC-V instruction set. Its primary purpose is to efficiently compute the quotient and remainder for all <code class="docutils literal notranslate"><span class="pre">DIV</span></code>, <code class="docutils literal notranslate"><span class="pre">DIVU</span></code>, <code class="docutils literal notranslate"><span class="pre">REM</span></code>, and <code class="docutils literal notranslate"><span class="pre">REMU</span></code> operations.</p>
+<p><img alt="image" src="_images/DIV_structure.jpeg" /></p>
+<section id="id1">
+<h5>Design Rationale<a class="headerlink" href="#id1" title="Link to this heading"></a></h5>
+<p>This divider is built around the <strong>SRT division algorithm</strong> to achieve high performance. The SRT algorithm is a family of digit-recurrence algorithms that determine multiple bits of the quotient in each clock cycle, thereby accelerating the division process.</p>
+<ul class="simple">
+<li><p><strong>Radix-4:</strong> The divider generates two quotient bits at a time. It does this by using a base-4 representation internally, where each quotient digit can take on values from a redundant set, <code class="docutils literal notranslate"><span class="pre">{-2,</span> <span class="pre">-1,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2}</span></code>. Processing two bits at a time drastically reduces the number of iterations needed to complete a 32-bit division.</p></li>
+<li><p><strong>Redundancy:</strong> The use of a redundant quotient digit set is the key to the SRT algorithm’s speed. It allows the divider to select the next quotient digit based on only a few of the most significant bits of the partial remainder, without waiting for the slow process of full carry propagation. This simplifies the decision-making logic and allows the core iterative loop to run at a higher clock speed.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h5>Functional Breakdown<a class="headerlink" href="#id2" title="Link to this heading"></a></h5>
+<ul class="simple">
+<li><p><strong>Pre-processing and Normalization:</strong> Before the iterative process begins, the dividend and divisor are prepared and represented as 64-bit numbers. A key step is normalization, where the divisor is left-shifted until its most significant <code class="docutils literal notranslate"><span class="pre">1</span></code> bit is at a predetermined position. The dividend is shifted by the same amount, and the number of shifts is recorded. This ensures the operands are properly aligned for the SRT iterations and handles cases with leading zeros efficiently.</p></li>
+<li><p><strong>Core Iterative Loop:</strong> Main part of the SRT divider, implemented as a multi-cycle iterative loop. For each iteration 2 bits of quotient in redundant form are generated, and the remainder is updated. Crucially, the additions and subtractions are performed using a Carry-Save Adder (CSA), avoiding the long carry-propagation delay of a standard adder. The partial remainder is stored in a carry-save format to facilitate this fast addition.</p></li>
+<li><p><strong>Quotient Digit Selection:</strong> Within the recurrence loop, quotient bits are determined by the Quotient Digit Selection logic. The QDS logic examines 6 of the most significant bits of the partial remainder and the divisor to select the next 2 digits. This eliminates the need to compute the full partial remainder in each cycle, dramatically speeding up the process.</p></li>
+<li><p><strong>Finalization:</strong> After the required number of iterations, the divider has a quotient in a redundant Radix-4 form and a final partial remainder still in carry-save form. The final 2 clock cycles performs the necessary steps:</p>
+<ul>
+<li><p>Restore remainder and quotient if needed.</p></li>
+<li><p>The redundant quotient digits are converted into a standard two’s complement binary number.</p></li>
+<li><p>The final remainder (in its carry-save form) is converted into a standard binary representation.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+</section>
+</section>
+<section id="fpu">
+<h2>FPU<a class="headerlink" href="#fpu" title="Link to this heading"></a></h2>
+<section id="id3">
+<h3>1. Features<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>The FPU module supports IEEE 754 standard RV32F floating-point arithmetic.</p>
+<section id="supported-data-types">
+<h4>Supported Data Types<a class="headerlink" href="#supported-data-types" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Single Precision</strong> (32-bit floating point)</p></li>
+<li><p>32-bit Signed and Unsigned Integers for conversion operations.</p></li>
+</ul>
+</section>
+<section id="id4">
+<h4>Supported Operations<a class="headerlink" href="#id4" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Arithmetic:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fadd.s</span></code> ( Addition )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsub.s</span></code> ( Subtraction )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmul.s</span></code> ( Multiplication )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fdiv.s</span></code> ( Division )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsqrt.s</span></code> ( Square Root )</p></li>
+</ul>
+</li>
+<li><p><strong>Comparison:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">feq.s</span></code> ( Compare equal )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flt.s</span></code> ( Compare less than )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle.s</span></code> ( Compare less than or equal )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmin.s</span></code> ( Compare and output smaller floating-point number )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmax.s</span></code> ( Compare and output larger floating-point number )</p></li>
+</ul>
+</li>
+<li><p><strong>Conversions:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fcvt.w.s</span></code> ( Convert a floating-point number to a signed 32-bit integer )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fcvt.wu.s</span></code> ( Convert a floating-point number to a unsigned 32-bit integer )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fcvt.s.w</span></code> ( Convert a signed 32-bit integer to a floating-point number )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fcvt.s.wu</span></code> ( Convert a unsigned 32-bit integer to a floating-point number )</p></li>
+</ul>
+</li>
+<li><p><strong>Fused:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmadd.s</span></code> ( Addition after Multiplication )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmsub.s</span></code> ( Subtraction after Multiplication )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fnmsub.s</span></code> ( Addition after (negative)Multiplication )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fnmadd.s</span></code> ( Subtraction after (negative)Multiplication )</p></li>
+</ul>
+</li>
+<li><p><strong>Sign operation:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsgnj.s</span></code> ( f[rd] = {f[rs2][31], f[rs1][30:0]} )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsgnjn.s</span></code> ( f[rd] = {~f[rs2][31], f[rs1][30:0]} )</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsgnjx.s</span></code> ( f[rd] = {f[rs1][31] ^ f[rs2][31], f[rs1][30:0]} )</p></li>
+</ul>
+</li>
+<li><p><strong>Others:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fclass.s</span></code> ( Classify floating-point number’s status )</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="ieee-754-compliance">
+<h4>IEEE 754 Compliance<a class="headerlink" href="#ieee-754-compliance" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Rounding Modes:</strong></p>
+<ul>
+<li><p>Round to Nearest, ties to Even (RNE) - <em>Default</em></p></li>
+<li><p>Round Towards Zero (RTZ)</p></li>
+<li><p>Round Down (towards -∞) (RDN)</p></li>
+<li><p>Round Up (towards +∞) (RUP)</p></li>
+<li><p>Round to Nearest, ties to Max Magnitude (RMM)</p></li>
+</ul>
+</li>
+<li><p><strong>Exception Flags:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Invalid</span> <span class="pre">Operation</span></code> (NV)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Division</span> <span class="pre">by</span> <span class="pre">Zero</span></code> (DZ)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Overflow</span></code> (OF)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Underflow</span></code> (UF)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Inexact</span></code> (NX)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id5">
+<h3>2. Port specification<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<section id="id6">
+<h4>Input ports<a class="headerlink" href="#id6" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Width</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>clk</p></td>
+<td><p>1</p></td>
+<td><p>clock signal</p></td>
+</tr>
+<tr class="row-odd"><td><p>rst_n</p></td>
+<td><p>1</p></td>
+<td><p>reset signal</p></td>
+</tr>
+<tr class="row-even"><td><p>FPU_start</p></td>
+<td><p>1</p></td>
+<td><p>start signal for the FPU</p></td>
+</tr>
+<tr class="row-odd"><td><p>opcode</p></td>
+<td><p>7</p></td>
+<td><p>opcode of the instruction</p></td>
+</tr>
+<tr class="row-even"><td><p>func7</p></td>
+<td><p>7</p></td>
+<td><p>func7 of the instruction</p></td>
+</tr>
+<tr class="row-odd"><td><p>func3</p></td>
+<td><p>3</p></td>
+<td><p>func3 of the instruction</p></td>
+</tr>
+<tr class="row-even"><td><p>rs2</p></td>
+<td><p>5</p></td>
+<td><p>rs2 of the instruction</p></td>
+</tr>
+<tr class="row-odd"><td><p>frm</p></td>
+<td><p>3</p></td>
+<td><p>rounding mode from fcsr</p></td>
+</tr>
+<tr class="row-even"><td><p>operand_a</p></td>
+<td><p>32</p></td>
+<td><p>rs1’s content</p></td>
+</tr>
+<tr class="row-odd"><td><p>operand_b</p></td>
+<td><p>32</p></td>
+<td><p>rs2’s content</p></td>
+</tr>
+<tr class="row-even"><td><p>operand_c</p></td>
+<td><p>32</p></td>
+<td><p>rs3’s content</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id7">
+<h4>Output ports<a class="headerlink" href="#id7" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Width</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>result_out</p></td>
+<td><p>32</p></td>
+<td><p>FPU’s result</p></td>
+</tr>
+<tr class="row-odd"><td><p>fflags</p></td>
+<td><p>5</p></td>
+<td><p>Exception flags of the operation</p></td>
+</tr>
+<tr class="row-even"><td><p>FPU_done</p></td>
+<td><p>1</p></td>
+<td><p>finish signal of the FPU</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="id8">
+<h3>3. Architecture<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<p>The FPU is designed with a top-down, modular approach. The <code class="docutils literal notranslate"><span class="pre">FPU_Top</span></code> module acts as the central hub that decodes incoming signals and dispatches them to the appropriate functional unit.</p>
+<section id="id9">
+<h4>Module breakdown<a class="headerlink" href="#id9" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FPU_Top.v</span></code>: Top-level FPU module that controls all submodules.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Decoder.v</span></code>: Decodes FP numbers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Encoder.v</span></code>: Encodes FP numbers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Adder.v</span></code>: Performs floating-point addition and subtraction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Multiplier.v</span></code>: Performs floating-point multiplication.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Divider.v</span></code>: Performs floating-point division.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Sqrt.v</span></code>: Performs floating-point square root.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Compare.v</span></code>: Compares two floating-point numbers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Min_Max.v</span></code>: Compares two floating-point numbers and output a floating-point number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Convert.v</span></code>: Handles all conversions between FP and integer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Fused.v</span></code>: Handles fused operation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Fsgnj.v</span></code>: Handles sign operation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SP_Classifier.v</span></code>: Handles <code class="docutils literal notranslate"><span class="pre">fclass.s</span></code> operation.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="alu">
+<h2>ALU<a class="headerlink" href="#alu" title="Link to this heading"></a></h2>
+<p>The ALU supports basic arithmetic and shifter operations for the RISC-V architecture. We use the <code class="docutils literal notranslate"><span class="pre">ALU_top</span></code> module to translate the decoded results from the CPU into <code class="docutils literal notranslate"><span class="pre">ALU</span></code> opcodes. Within the ALU module, a barrel shifter is used to handle shift operations instead of relying on the <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code> operator.</p>
+<section id="support-operation">
+<h3>Support Operation<a class="headerlink" href="#support-operation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>ADD</strong> : A+B</p></li>
+<li><p><strong>SUB</strong> : A-B</p></li>
+<li><p><strong>AND</strong> : A AND B</p></li>
+<li><p><strong>OR</strong>  : A OR B</p></li>
+<li><p><strong>XOR</strong> : A XOR B</p></li>
+<li><p><strong>SLL</strong> : Shift left logical</p></li>
+<li><p><strong>SRL</strong> : Shift right logical</p></li>
+<li><p><strong>SRA</strong> : Shift right arithmetic</p></li>
+<li><p><strong>SLT</strong> : Less than (Signed)</p></li>
+<li><p><strong>SLTU</strong> : Less than (Unsigned)</p></li>
+</ul>
+</section>
+<section id="i-o-ports">
+<h3>I/O Ports<a class="headerlink" href="#i-o-ports" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Width</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Ctrl</p></td>
+<td><p>4</p></td>
+<td><p>Input</p></td>
+<td><p>Control opcode for ALU</p></td>
+</tr>
+<tr class="row-odd"><td><p>a</p></td>
+<td><p>32</p></td>
+<td><p>Input</p></td>
+<td><p>rs1 data value</p></td>
+</tr>
+<tr class="row-even"><td><p>b</p></td>
+<td><p>32</p></td>
+<td><p>Input</p></td>
+<td><p>rs2 data value</p></td>
+</tr>
+<tr class="row-odd"><td><p>Out</p></td>
+<td><p>32</p></td>
+<td><p>Output</p></td>
+<td><p>Result value</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="modules">
+<h3>Modules<a class="headerlink" href="#modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ALU_top.v</span></code> : Interface of ALU and pipeline CPU.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALU.v</span></code> : Combine arithmetic operation and shift operation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALU_barrel_shifter.v</span></code> : Handle shifter operation.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="if_stage.html" class="btn btn-neutral float-left" title="Instruction Fetch Stage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mem_stage.html" class="btn btn-neutral float-right" title="Memory Stage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, RISCV32 Core.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
