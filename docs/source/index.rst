@@ -19,4 +19,4 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
-   core_design_index.rst
+   core_design_index
