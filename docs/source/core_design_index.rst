@@ -11,4 +11,4 @@ Description
    if_stage.md
    ex_stage.md
    mem_stage.md
-   CSR.md
+   other_modules.md
