@@ -1,4 +1,5 @@
-# Table of Contents
+# CSR
+## Table of Contents
 
 - Overview
 - Summary Table: CSR Address, Name, Privilege, Access, Implementation Status
@@ -10,7 +11,7 @@
 
 ---
 
-# Overview
+## Overview
 
 This CSR collection is sourced from the **CSRFile Verilog module**.  
 The core currently supports:
@@ -30,7 +31,7 @@ This document lists each CSR with details:
 
 ---
 
-# CSR Summary (Key Points)
+## CSR Summary (Key Points)
 
 The table uses **12-bit hex addresses**.  
 "Implemented" means the CSR is explicitly handled in read/write/reset/seq logic.
@@ -70,15 +71,15 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-# Machine-level CSRs (Details)
+## Machine-level CSRs (Details)
 
-## `mstatus` — 0x300
+### `mstatus` — 0x300
 - Priv: M  
 - Access: RW  
 - Impl: Yes  
 - Reset: `0x00001800`  
 
-### Fields:
+#### Fields:
 - UIE(0), SIE(1), MIE(3)  
 - UPIE(4), SPIE(5), MPIE(7)  
 - SPP(8), MPP(12:11)  
@@ -92,7 +93,7 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `misa` — 0x301
+### `misa` — 0x301
 - Priv: M  
 - Access: RO  
 - Impl: Yes (from `misa_i`)  
@@ -100,7 +101,7 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `medeleg` — 0x302  
+### `medeleg` — 0x302  
 - Priv: M  
 - Access: RW  
 - Impl: Yes (masked)  
@@ -108,12 +109,12 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `mideleg` — 0x303  
+### `mideleg` — 0x303  
 - Same as medeleg (masked, reset 0).  
 
 ---
 
-## `mie` — 0x304  
+### `mie` — 0x304  
 - Priv: M  
 - Access: RW  
 - Impl: Yes (masked by `CSR_MIE_MASK`)  
@@ -121,7 +122,7 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `mtvec` — 0x305  
+### `mtvec` — 0x305  
 - Priv: M  
 - Access: RW  
 - Impl: Yes (masked, aligned)  
@@ -130,30 +131,30 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `mscratch` — 0x340  
+### `mscratch` — 0x340  
 - RW, Reset=0  
 
-## `mepc` — 0x341  
+### `mepc` — 0x341  
 - RW, Reset=0  
 - Holds exception PC, used in `mret`.  
 
-## `mcause` — 0x342  
+### `mcause` — 0x342  
 - RW, Reset=0  
 - Mask = `CSR_MCAUSE_MASK`  
 - Encodes exception/interrupt cause.  
 
-## `mtval` — 0x343  
+### `mtval` — 0x343  
 - RW, Reset=0  
 - Updated with faulting PC/address.  
 
-## `mip` — 0x344  
+### `mip` — 0x344  
 - RW, Reset=0  
 - Mask = `CSR_MIP_MASK`  
 - Includes buffered update mechanism.  
 
 ---
 
-## `mcycle` / `mcycleh` (0xB00 / 0xB80)
+### `mcycle` / `mcycleh` (0xB00 / 0xB80)
 - Priv: U/M  
 - RO counters  
 - Auto-incrementing  
@@ -161,39 +162,39 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-## `mtimecmp` — 0x7C0 (Custom)
+### `mtimecmp` — 0x7C0 (Custom)
 - Priv: M*  
 - RW, Reset=0  
 - When `mcycle == mtimecmp`, sets `MTIP`.  
 
 ---
 
-## `mhartid` — 0xF14  
+### `mhartid` — 0xF14  
 - RO, from `cpu_id_i`  
 
 ---
 
-# User-level CSRs
+## User-level CSRs
 
-## `fflags` — 0x001  
+### `fflags` — 0x001  
 - RW, Reset=0  
 - Also updated by FPU events.  
 
-## `frm` — 0x002  
+### `frm` — 0x002  
 - RW, Reset=0  
 
-## `fcsr` — 0x003  
+### `fcsr` — 0x003  
 - RW  
 - Packs `frm + fflags`.  
 
-## `cycle` / `time` / `instret` (0xC00 / 0xC01 / 0xC02)  
+### `cycle` / `time` / `instret` (0xC00 / 0xC01 / 0xC02)  
 - RO, lower 32-bit only  
 - `time` aliased to `mcycle` (non-standard)  
 - `instret` declared but not mapped.  
 
 ---
 
-# Custom / Non-standard CSRs
+## Custom / Non-standard CSRs
 
 - `MTIMECMP (0x7C0)` — custom timer compare.  
 - `DSCRATCH (0x7B2)`, `SIM_CTRL (0x8B2)` — simulation control.  
@@ -201,7 +202,7 @@ The table uses **12-bit hex addresses**.
 
 ---
 
-# Behavioral Notes
+## Behavioral Notes
 
 - **Reset state:**  
   `csr_priv_q = PRIV_MACHINE`  
@@ -226,3 +227,14 @@ The table uses **12-bit hex addresses**.
 
 - **FPU flags:**  
   Written by FPU completion path or CSR writes.  
+
+---
+
+## Appendix — Notes & TODOs
+
+- **S-mode**: Declared placeholders (`sret`, interrupts, satp) but not implemented.  
+- **SATP PPN width**: Should be 21 bits for Sv32 (`21:0`), not 19.  
+- **mtime vs mcycle**: Currently aliased — proper `mtime` TODO.  
+- **HPM / PMP / MN CSRs**: Declared, not active.  
+- **Custom CSRs**: Must be documented as vendor extensions.  
+- **Mask constants** (`CSR_MSTATUS_MASK`, etc.) should be included in spec.  
