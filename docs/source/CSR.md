@@ -1,4 +1,5 @@
 # CSR
+
 ## Table of Contents
 
 - Overview
@@ -7,7 +8,6 @@
 - User-level CSRs (field-by-field details)
 - Custom / Non-standard CSRs
 - Behavioral Notes (reset values, exception/interrupt behavior, mip buffer, mtimercmp behavior, etc.)
-- Appendix: Notes & TODOs (SATP PPN length, S-mode placeholders, etc.)
 
 ---
 
