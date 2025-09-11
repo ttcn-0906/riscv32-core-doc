@@ -140,3 +140,145 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 - MODE: virtual address support in current.
 - ASID: address space identifier to control that address can be used in current process.
 - PPN: first level physical page number.
+
+
+## Dcache
+
+### 1. I/O port
+
+#### System Ports
+
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | clk                 | 1     | Timing                         |
+| input  | rst_n               | 1     | Reset dcache at low            |
+| input  | mem_init_complete_i | 1     | Inform cache if DRAM is working|
+
+#### CPU Ports
+
+| I/O    | name         | width | purpose                                                                 |
+|--------|-------------|-------|-------------------------------------------------------------------------|
+| input  | tag_i        | 18    | A number to recognize whether the data we want is on the specific address or not |
+| input  | idx_i        | 9     | To address which cache line we want                                     |
+| input  | word_ofs_i   | 3     | Operating a specific word in a specific data block                      |
+| input  | mask_i       | 4     | A word is 4 bytes in 32-bit CPU and mask_i is a filter to choose which bytes need to be operated |
+| input  | cpu_req_wr   | 1     | CPU wants to write data to cache                                        |
+| input  | cpu_req_rd   | 1     | CPU wants to read data from cache                                       |
+| output | cpu_data_o   | 32    | Turn specific data back to CPU                                          |
+| output | dcache_rdy_o | 1     | A one way handshake telling CPU if this cache is available or not       |
+| input  | invalidate_i | 1     | Invalidate specific cacheline                                           |
+| input  | flush_i      | 1     | Flush specific cacheline                                                |
+| input  | writeback_i  | 1     | Write all of the data back to DRAM                                      |
+
+#### Arbiter Ports
+
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | mem_rdy_i    | 1     | A handshake signal to inform cache if it can send new instruction to arbiter |
+| input  | mem_data_i   | 256   | Data from arbiter (DRAM)                                           |
+| output | wr_mem_end_o | 1     | Get high when the data is last one                                  |
+| input  | rd_mem_end_i | 1     | Tell cache reading process is done                                  |
+| output | req_wr_mem   | 1     | Cache requests to write data to memory                               |
+| output | req_rd_mem   | 1     | Cache requests to read data from memory                               |
+| output | mem_addr_o   | 32    | Tell DRAM which address cache wants to write or read                |
+| output | mem_data_o   | 256   | Data for DRAM                                                        |
+
+### 2. Description
+
+This is a 32kB 2-way cache. Its data storage is constructed by BRAM IP, and each block size is 32 bits. It uses LRU as the replacement policy when a data miss occurs.
+
+## Icache
+
+### 1. I/O ports
+
+#### System Ports
+
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | clk                 | 1     | Timing                         |
+| input  | rst_n               | 1     | Reset dcache at low            |
+| input  | mem_init_complete_i | 1     | Inform cache if DRAM is working|
+
+#### CPU Ports
+
+| I/O    | name         | width | purpose                                                                 |
+|--------|-------------|-------|-------------------------------------------------------------------------|
+| input  | tag_i        | 19    | A number to recognize whether the data we want is on the specific address or not |
+| input  | idx_i        | 8     | To address which cache line we want                                     |
+| input  | ofs_i        | 5     | Operating a specific word in a specific data block (The last two bits must be zero) |
+| input  | invalidate_i | 1     | Invalidate specific cacheline                                           |
+| output | icache_rdy_o | 1     | Tell CPU if I-cache is available                                        |
+| output | cpu_inst_o   | 32    | Output particular instruction                                           |
+
+#### Arbiter Ports
+
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | mem_rdy_i    | 1     | A handshake signal to inform cache if it can send new instruction to arbiter |
+| input  | mem_data_i   | 256   | Data from arbiter (DRAM)                                           |
+| input  | rd_mem_end_i | 1     | Tell cache reading process is done                                  |
+| output | req_rd_mem_o | 1     | Cache requests to read data from memory                               |
+| output | mem_addr_o   | 32    | Tell DRAM which address cache wants to write or read                |
+
+### 2. Description
+
+This is a 16kB 2-way cache. Its data storage is constructed by BRAM IP, and each block size is 32 bits. It uses FIFO as the replacement policy when a data miss occurs.
+
+
+## Arbiter
+
+### 1. I/O Ports
+
+#### System Ports
+
+| I/O    | name          | width | purpose                   |
+|--------|---------------|-------|---------------------------|
+| input  | clk           | 1     | Timing                    |
+| input  | rst_n         | 1     | Reset caches at low       |
+| input  | init_addr_i   | 32    | Provide DRAM initial values |
+| input  | init_data_i   | 128   | Initial values            |
+| input  | init_end_i    | 1     | Initialization is done    |
+
+#### Dcache Ports
+
+| I/O    | name       | width | purpose                        |
+|--------|------------|-------|--------------------------------|
+| output | d_rd_data_o | 256  | Data Dcache needs             |
+| output | d_rd_end_o  | 1    | Read data process is done      |
+| input  | d_wr_data_i | 256  | Data to store into DRAM        |
+| input  | d_req_wr_i  | 1    | Dcache requests to write to DRAM |
+| input  | d_req_rd_i  | 1    | Dcache requests to read from DRAM |
+| input  | d_addr_i    | 32   | Address for DRAM write/read    |
+| output | d_mem_rdy_o | 1    | Dcache can start to read/write DRAM |
+
+#### Icache Ports
+
+| I/O    | name       | width | purpose                        |
+|--------|------------|-------|--------------------------------|
+| output | i_rd_data_o | 256  | Data Icache needs             |
+| output | i_rd_end_o  | 1    | Read data process is done      |
+| input  | i_req_rd_i  | 1    | Icache requests to read from DRAM |
+| input  | i_addr_i    | 32   | Address for DRAM write/read    |
+| output | i_mem_rdy_o | 1    | Icache can start to read/write DRAM |
+
+#### MIG Ports
+
+| I/O    | name           | width | purpose                                      |
+|--------|----------------|-------|----------------------------------------------|
+| output | app_addr       | 27    | DRAM address (128MB DRAM → 27 bits)         |
+| output | app_cmd        | 1     | Decide read or write                          |
+| output | app_en         | 1     | Command enable                                |
+| input  | app_rdy        | 32    | MIG is ready to accept new command           |
+| input  | init_mem_rdy   | 1     | High after DRAM starts working               |
+| output | app_wdf_data   | 128   | Data to write into DRAM                        |
+| output | app_wdf_end    | 1     | High for 1 cycle at end of data             |
+| output | app_wdf_wren   | 1     | Write command valid                           |
+| input  | app_wdf_rdy    | 1     | DRAM can accept write                         |
+| output | app_wdf_mask   | 1     | Which bytes to write (default: all zeros)    |
+| input  | app_rd_data    | 128   | Data from DRAM                                |
+| input  | app_rd_data_end| 1     | High when data read back from DRAM           |
+| input  | app_rd_data_valid | 1  | Handshake indicating data from DRAM is valid |
+
+### 2. Description
+
+This interface resolves competition between I-cache and D-cache and also serves as a data channel when the CPU is first activated.
