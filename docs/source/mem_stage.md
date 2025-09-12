@@ -320,10 +320,21 @@ Skip them, this part will automatically operate by MIG IP after a command is iss
 #### System Ports
 | I/O   | name        | width | purpose                  |
 | ----- | ----------- | ----- | ------------------------ |
-| input | sys_clk_i | 1     | Timing (The Digilent-NEXYS A7 100T board is recommended to set it to the period of 3077ps )      |
-| input | clk_ref_i | 1     | Reference clock input and based on the the setting when setting up the  behavior of MIG IP  |
-| input | sys_rst    | 1     | reset at low(It is based on your dicision when setting up the  behavior of MIG IP ) |
+| input | sys_clk_i | 1     | System clock (on the Digilent Nexys A7-100T, recommended period = 3077 ps)     |
+| input | clk_ref_i | 1     | Reference clock input, depends on MIG IP setup  |
+| input | sys_rst    | 1     | Active-low reset (depends on your decision during MIG IP setup) |
 
 
 ### 2. Discription
-The behaviors of MIG are deicded by the FPGA board that you want to use. 
+The behavior of the MIG is determined by the FPGA board that you use.
+
+### 3. The parameters in Digilent-NEXYS A7 100T board
+<1>Pin Compatible FPGA->採用預設值
+<2>Memory Selection->選DDR2 SDRAM
+<3>Controller Options->clock Period官方推薦3077ps，PHY在3077ps下只能是4:1，Memory Part在這塊版上是MT47H64M16HR-25E，對應的Data width是16 bits，Data Mask要勾選，其餘選項皆採預設
+<4>Memory Options->Input Clock Period選3077ps，Burst Type選Sequence，RTT-ODT選50ohms，Memory Address Mapping Selection選Bank-ROW-COLLUM這個順序
+<5>FPGA Options->System Clock選Single-Ended，Reference Clock選No Buffer,其餘選項皆採預設值
+Extended FPGA OPtions->Internal Termination Impedence選50Ohms
+<6>IO Planning Options->選Fixed Pin output
+<7>Pin Selection->做腳位配置
+<8>後續全按NEXT
