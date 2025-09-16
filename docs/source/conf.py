@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'RISCV32 Core'
-copyright = '2025, RISCV32 Core'
-author = 'RISCV32 Core'
+project = 'NYCU RISCV32 Core'
+copyright = '2025, NYCU RISCV32 Core'
+author = 'NYCU RISCV32 Core'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

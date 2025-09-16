@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-RISCV32 Core Documentation
+NYCU RISCV32 Core Documentation
 ===============================
 
 Here is the block diagram of the core:
 
 .. image:: images/riscv32-core-arch.png
-   :alt: RISCV32 Core Block Diagram
+   :alt: NYCU RISCV32 Core Block Diagram
    :align: center
    :scale: 36%
 

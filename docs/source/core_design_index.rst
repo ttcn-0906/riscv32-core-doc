@@ -1,4 +1,4 @@
-RISCV32 Core Design
+NYCU RISCV32 Core Design
 ===============================
 
 Description
