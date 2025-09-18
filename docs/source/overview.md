@@ -4,7 +4,7 @@
 
 ## Description
 
-4-stage, single issue, inorder pipelined CPU  
+4-stage, single issue, inorder pipelined CPU supports `RV32IMF`  
 simply stall the pipeline via `PipelineCtrl` for the execution or memory access.
 
 - Fetch
