@@ -141,12 +141,15 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 - ASID: address space identifier to control that address can be used in current process.
 - PPN: first level physical page number.
 
+## Memory system
+<img width="411" height="601" alt="Memory" src="https://github.com/user-attachments/assets/27161469-1587-4a34-8284-159388b401c2" />
 
-## Dcache
 
-### 1. I/O port
+### Dcache
 
-#### System Ports
+#### 1. I/O port
+
+##### System Ports
 
 | I/O    | name                 | width | purpose                        |
 |--------|--------------------|-------|--------------------------------|
