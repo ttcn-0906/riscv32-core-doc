@@ -177,6 +177,8 @@ The simplified structure of the Memory system is below.<br></br>
 | input  | mig_sys_clk_i | 1 | MIG system clock for memory operations |
 
 ##### Others
+| I/O | name | width | purpose |
+|------|------|--------|---------|
 | output | mmcm_locked_o         | 1 | Indicates MMCM clock generator is locked |
 | output | init_calib_complete_o | 1 | MIG calibration completion flag |
 | output | ui_addn_clk_o         | 1 | Additional clock output from MIG UI |
