@@ -151,6 +151,8 @@ The simplified structure of the Memory system is below.<br></br>
 ### MEM_SYS_TOP
 #### 1. I/O port
 ##### System Ports
+| I/O | name | width | purpose |
+|------|------|--------|---------|
 | input  | sys_rst_n_i   | 1 | System reset, active low |
 | input  | cpu_clk_i     | 1 | CPU clock input |
 
