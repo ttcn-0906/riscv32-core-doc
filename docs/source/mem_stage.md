@@ -175,6 +175,8 @@ The simplified structure of the Memory system is below.<br></br>
 | input  | except_complete   | 1     | Asserted for one cycle after the CPU handles an exception caused by the dcache  |
 
 ##### MMU Ports
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
 | input  | flush_i      | 1     | Flush specific cacheline                                                |
 | input  | writeback_i  | 1     | Write all of the data back to DRAM                                      |
 | input  | invalidate_i | 1     | Invalidate specific cacheline                                           |
