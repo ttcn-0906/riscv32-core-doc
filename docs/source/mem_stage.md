@@ -141,15 +141,92 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 - ASID: address space identifier to control that address can be used in current process.
 - PPN: first level physical page number.
 
+---
+
 ## Memory system
 The simplified structure of the Memory system is below.<br></br>
 <img width="411" height="601" alt="Memory" src="https://github.com/user-attachments/assets/27161469-1587-4a34-8284-159388b401c2" />
 <br></br>
 
-### Dcache
-
+### MEM_SYS_TOP
 #### 1. I/O port
+##### System Ports
+| input  | sys_rst_n_i   | 1 | System reset, active low |
+| input  | cpu_clk_i     | 1 | CPU clock input |
 
+##### DDR2 Physical Interface
+| I/O | name | width | purpose |
+|------|------|--------|---------|
+| output | DDR2_0_addr  | 13 | Row address for DDR2 memory |
+| output | DDR2_0_ba    | 3  | Bank address for DDR2 memory |
+| output | DDR2_0_cas_n | 1  | Column address strobe (active low) |
+| output | DDR2_0_ck_n  | 1  | Differential clock negative |
+| output | DDR2_0_ck_p  | 1  | Differential clock positive |
+| output | DDR2_0_cke   | 1  | Clock enable signal |
+| output | DDR2_0_cs_n  | 1  | Chip select (active low) |
+| output | DDR2_0_dm    | 2  | Data mask for each byte lane |
+| inout  | DDR2_0_dq    | 16 | Data bus of DDR2 memory |
+| inout  | DDR2_0_dqs_n | 2  | Data strobe differential negative |
+| inout  | DDR2_0_dqs_p | 2  | Data strobe differential positive |
+| output | DDR2_0_odt   | 1  | On-die termination control |
+| output | DDR2_0_ras_n | 1  | Row address strobe (active low) |
+| output | DDR2_0_we_n  | 1  | Write enable (active low) |
+| input  | mig_ref_clk_i | 1 | Reference clock for MIG DDR2 controller |
+| input  | mig_sys_clk_i | 1 | MIG system clock for memory operations |
+
+##### Others
+| output | mmcm_locked_o         | 1 | Indicates MMCM clock generator is locked |
+| output | init_calib_complete_o | 1 | MIG calibration completion flag |
+| output | ui_addn_clk_o         | 1 | Additional clock output from MIG UI |
+| output | ui_clk_sync_rst_o     | 1 | Synchronous reset generated in MIG UI domain |
+| output | rom_rst_busy_o        | 1 | ROM is under reset or busy |
+| output | sram_busy_o           | 1 | Indicates SRAM is busy and cannot be accessed |
+
+
+##### CDMA Control Interface
+| I/O | name | width | purpose |
+|------|------|--------|---------|
+| input  | cpu_cdma_addr_i  | 32 | Address used for CDMA access |
+| input  | cpu_cdma_data_i  | 32 | Data written by CPU to CDMA |
+| output | cpu_cdma_data_o  | 32 | Turn back CDMA status to CPU |
+| input  | except_complete_i | 1 | CPU asserts after handling a CDMA exception |
+| output | cdma_rdy_o        | 1 | Indicates CDMA controller is ready for next operation |
+| output | cdma_exception_o  | 1 | CDMA operation failed or illegal access occurred |
+| output | cdma_introut_o  | 1 | CDMA sends an interrupt upon completion of the data transfer|
+
+#### 2. Description
+Some I/O ports are not shown above and will be introduced in the following sections. This module helps other modules connect to the memory more easily. All the modules shown in the previous graph of memory system structure are instantiated in the MEM_SYS_TOP module.
+
+---
+### Dcache_dma_ctrl
+#### 1. I/O port
+##### CPU Ports
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | cpu_req_wr_i                | 1     | CPU issues a write request                         |
+| input  | cpu_req_rd_i               | 1     | CPU issues a read request             |
+
+##### MMU Ports
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | cacheable_i                | 1     | Issued by the MMU to indicate whether the memory access is cacheable and should go through the D-cache |
+
+##### CDMA Ports
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| output  | req_wr_dma                | 1     | Asserted to request the CDMA to perform a write operation                         |
+| output  | req_rd_dma               | 1     | Asserted to request the CDMA to perform a read operation            |
+
+##### Dcache Ports
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| output  | req_wr_d                | 1     | Asserted to request the D-cache to perform a write operation                         |
+| output  | req_rd_d               | 1     | Asserted to request the D-cache to perform a read operation             |
+
+---
+
+### Dcache
+#### 1. I/O port
 ##### System Ports
 
 | I/O    | name                 | width | purpose                        |
@@ -236,6 +313,8 @@ when a dirty miss occurs, the data cache first issues a write-back for the dirty
 and waits for its completion before initiating a memory read for the requested line.
 This prevents a scenario where a write-back exception occurs while the subsequent read has already fetched and overwritten the cache line,
 ensuring correct handling of exceptional conditions.
+
+---
 
 ### Icache
 
