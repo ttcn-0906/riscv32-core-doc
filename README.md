@@ -2,9 +2,9 @@
 
 ## Overview
 
-This repository contains the documentation for the RISC-V 32-bit core. The documentation is built using Sphinx, which supports both reStructuredText and Markdown formats.
+This repository contains the documentation for the NYCU RISC-V 32-bit core. The documentation is built using Sphinx, which supports both reStructuredText and Markdown formats.
 
-The documentation for this repository is automatically synchronized and published to the Read the Docs website. [View the documentation here](https://riscv32-core-doc.readthedocs.io/en/latest/index.html).
+The documentation for this repository is automatically synchronized and published to the Read the Docs website. [View the documentation here](https://nycu-riscv32-core-doc.readthedocs.io/en/latest/index.html).
 
 ## Getting Started
 
