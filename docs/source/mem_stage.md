@@ -152,42 +152,117 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 |--------|--------------------|-------|--------------------------------|
 | input  | clk                 | 1     | Timing                         |
 | input  | rst_n               | 1     | Reset dcache at low            |
-| input  | mem_init_complete_i | 1     | Inform cache if DRAM is working|
 
 #### CPU Ports
 
 | I/O    | name         | width | purpose                                                                 |
 |--------|-------------|-------|-------------------------------------------------------------------------|
-| input  | tag_i        | 18    | A number to recognize whether the data we want is on the specific address or not |
-| input  | idx_i        | 9     | To address which cache line we want                                     |
-| input  | word_ofs_i   | 3     | Operating a specific word in a specific data block                      |
+| input  | cpu_daddr_i | 32    | Ports receive a specific address from the CPU|
+| input  | cpu_data_i | 32    | Ports receive specific data from the CPU|
 | input  | mask_i       | 4     | A word is 4 bytes in 32-bit CPU and mask_i is a filter to choose which bytes need to be operated |
-| input  | cpu_req_wr   | 1     | CPU wants to write data to cache                                        |
-| input  | cpu_req_rd   | 1     | CPU wants to read data from cache                                       |
-| output | cpu_data_o   | 32    | Turn specific data back to CPU                                          |
-| output | dcache_rdy_o | 1     | A one way handshake telling CPU if this cache is available or not       |
+| input  | cpu_req_wr   | 1     | CPU wants to write data to the cache                                        |
+| input  | cpu_req_rd   | 1     | CPU wants to read data from the cache                                       |
+| output | cpu_data_o   | 32    | Turn specific data back to the CPU                                          |
+| output | dcache_rdy_o | 1     | A handshake telling CPU if this cache is available or not       |
+| output | d_exception | 2     | Indicates whether a store or load access fault has occurred       |
 | input  | invalidate_i | 1     | Invalidate specific cacheline                                           |
 | input  | flush_i      | 1     | Flush specific cacheline                                                |
 | input  | writeback_i  | 1     | Write all of the data back to DRAM                                      |
 
-#### Arbiter Ports
-
+#### Memory Ports
 | I/O    | name         | width | purpose                                                             |
 |--------|-------------|-------|---------------------------------------------------------------------|
-| input  | mem_rdy_i    | 1     | A handshake signal to inform cache if it can send new instruction to arbiter |
-| input  | mem_data_i   | 256   | Data from arbiter (DRAM)                                           |
-| output | wr_mem_end_o | 1     | Get high when the data is last one                                  |
-| input  | rd_mem_end_i | 1     | Tell cache reading process is done                                  |
-| output | req_wr_mem   | 1     | Cache requests to write data to memory                               |
-| output | req_rd_mem   | 1     | Cache requests to read data from memory                               |
-| output | mem_addr_o   | 32    | Tell DRAM which address cache wants to write or read                |
-| output | mem_data_o   | 256   | Data for DRAM                                                        |
+| output | mem_addr   | 32    | Tell DRAM which address cache wants to write or read                |
+##### Read
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | rm_rdy    | 1     | A handshake signal to inform the cache if it can send new instruction to the next stage |
+| input | rm_data   | 256   | Data for DRAM                                                        |
+| input | rm_success | 1     | Asserted on successful cache read                               |
+| input  | rm_complete | 1     | Asserted when the cache read operation completes.                                |
+| output | rm_vld   | 1     | A handshake signal to notify the next cache stage that a new instruction is available    |
+##### Write
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | wm_rdy    | 1     | A handshake signal to inform cache if it can send new instruction to the next stage |
+| output | wm_data   | 256   | Data from DRAM                                                        |
+| input | wm_success | 1     | Asserted on successful cache write                                 |
+| input  | wm_complete | 1    | Asserted when the cache write operation completes                                  |
+| output | wm_vld   | 1     | A handshake signal to notify the next cache stage that a new instruction is available    |
+
 
 ### 2. Description
 
-This is a 32kB 2-way cache. Its data storage is constructed by BRAM IP, and each block size is 32 bits. It uses LRU as the replacement policy when a data miss occurs.
+This is a 32kB 2-way cache. Its data storage is constructed by the single port BRAM IP, and each block size is 32 bits. It uses LRU as the replacement policy when a data miss occurs.
 
-## Icache
+## Dcache_axiBus_bridge
+
+### 1. I/O port
+
+#### System Ports
+
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | aclk                 | 1     | Timing                         |
+| input  | aresetn               | 1     | Reset at low            |
+
+#### Data Cache Ports
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output | mem_addr   | 32    | Tell DRAM which address cache wants to write or read                |
+##### Read
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | rm_rdy    | 1     | A handshake signal to inform the cache if it can send new instruction to the next stage |
+| output | rm_data   | 256   | Data for DRAM                                                        |
+| output | rm_success | 1     | Asserted on successful read                               |
+| output  | rm_complete | 1     | Asserted when the read operation completes.                                |
+| input | rm_vld   | 1     | A handshake signal to notify the bridge that a new instruction is available    |
+##### Write
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | wm_rdy    | 1     | A handshake signal to inform cache if it can send new instruction to the next stage |
+| output | wm_data   | 256   | Data from DRAM                                                        |
+| output | wm_success | 1     | Asserted on successful write                                 |
+| output  | wm_complete | 1   |  Asserted when the write operation completes                                  |
+| input | wm_vld   | 1     | A handshake signal to notify the bridge that a new instruction is available    |
+
+#### AXI Ports(Only important ports)
+##### AW Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | M_AXI_AWADDR    | 32    |  Tell DRAM which address cache wants to write |
+| input  | M_AXI_AWREADY | 1     | Asserted when the write address channel is available |
+| output | M_AXI_AWVALID   | 1     | Asserted when the bridge wants to write address to   |
+##### W Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | M_AXI_WREADY    | 1     | Asserted when the write channel is available |
+| output | M_AXI_WDATA   | 256   | Data to DRAM                                                        |
+| output | M_AXI_WVALID | 1     | Asserted on successful write                                 |
+| output | M_AXI_WLAST   | 1     | A handshake signal to notify the bridge that a new instruction is available    |
+| output | M_AXI_AWVALID   | 1     | Asserted when the bridge wants to write address to   |
+##### B Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | M_AXI_BRESP    | 1     | Asserted when the b channel is available |
+| input | M_AXI_BVALID | 1     | Asserted on successful read                                 |
+| output | M_AXI_BREADY   | 1     |Asserted when the bridge is available to read |
+
+
+----------------------------------------------update later--------------------------------------------
+
+##### R Channel
+
+##### AR Channel
+
+### 2. Description
+
+This is a 32kB 2-way cache. Its data storage is constructed by the single port BRAM IP, and each block size is 32 bits. It uses LRU as the replacement policy when a data miss occurs.
+
+
+----------------------------------------------update later--------------------------------------------
+## I cache
 
 ### 1. I/O ports
 
