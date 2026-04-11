@@ -427,7 +427,7 @@ The Icache_axiBus_bridge is designed as a lightweight, read-only AXI4 Master to 
 The cpu_axiLite_bridge is a lightweight bus master optimized for non-burst, single-word peripheral accesses. The relationship between 5 channels is similar to AXI.
 
 
-Memory & Peripheral Related Diagram
+## Memory & Peripheral Related Diagram
 <img width="532" height="409" alt="image" src="https://github.com/user-attachments/assets/4287315a-1f5b-4515-bbdd-8e51c78c0dc5" />
 
 
