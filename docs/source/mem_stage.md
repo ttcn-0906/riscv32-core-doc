@@ -254,7 +254,7 @@ This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Sin
 |--------|-------------|-------|---------------------------------------------------------------------|
 | input  | M_AXI_BRESP    | 2     | Indicated whether the write behavior is sucessful |
 | input | M_AXI_BVALID | 1     | Asserted on successful write                                 |
-| output | M_AXI_BREADY   | 1     |Asserted when the bridge is available to receive new instrucion |
+| output | M_AXI_BREADY   | 1     |Asserted when the bridge is available to receive new instruction |
 
 ##### AR Channel
 | I/O    | name         | width | purpose                                                             |
@@ -270,7 +270,7 @@ This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Sin
 | input | M_AXI_RRESP | 2    | Indicated whether the read behavior is sucessful                      |
 | input | M_AXI_RLAST   | 1     |Asserted when the data is the last data block of a burst  |
 | input | M_AXI_RVALID   | 1     |Asserted on successful read   |
-| output | M_AXI_RREADY   | 1     |Asserted when the bridge is available to receive new instrucion  |
+| output | M_AXI_RREADY   | 1     |Asserted when the bridge is available to receive new instruction  |
 
 ### 2. Description
 The bridge is responsible for translating the custom D Cache memory interface into the standard AXI4 Full Protocol.
@@ -288,7 +288,7 @@ The bridge is responsible for translating the custom D Cache memory interface in
 | I/O    | name                 | width | purpose                        |
 |--------|--------------------|-------|--------------------------------|
 | input  | clk                 | 1     | Timing                         |
-| input  | rst_n               | 1     | Reset dcache at low            |
+| input  | rst_n               | 1     | Reset icache at low            |
 
 #### CPU Ports
 
@@ -363,8 +363,69 @@ This is a 16KB 2-way Set-Associative Cache. The storage uses BRAM IPs, with a Ca
 ### 2. Description
 The Icache_axiBus_bridge is designed as a lightweight, read-only AXI4 Master to serve the I-cache's refill requests. The axi behavior is as same as those in the Dcache_axiBus_Bridge part.
 
-----------------------------------------Update Later-----------------------------------------
-Rest: CPU_axi_bridge
+## cpu_axiLite_bridge
+
+### 1. I/O port
+
+#### System Ports
+
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | aclk                 | 1     | Timing                         |
+| input  | aresetn               | 1     | Reset at low            |
+
+#### CPU Interface
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input | req_rd_mm   | 1    | CPU request for a memory-mapped read operation                |
+| input  | req_wr_mm    | 1   |CPU request for a memory-mapped write operation |
+| input | mm_addr_i   | 32   | Target peripheral address for the access                                                     |
+| input | mm_data_i | 32    | Data payload for write operations              |
+| output  | mm_data_out | 32  |  Data returned from the peripheral        |
+| output | mm_exception   | 2   | Indicates a access fault  |
+| output | mm_rdy   | 1   | Indicates if the bridge is ready to get a new request  |
+| output | mm_vld   | 1   | Asserted when the reading or writing process is done  |
+
+#### AXI-Lite Ports(Only important ports)
+##### AW Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | m_axi_lite_awvalid    | 1    |  Asserted when the bridge intends to write something to the target address |
+| input  | m_axi_lite_awready | 1     | Asserted when the write address channel is available |
+| output | m_axi_lite_awaddr   | 32     | Target peripheral address for wrtite   |
+
+##### W Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | m_axi_lite_wready    | 1     | Asserted when the write channel is available |
+| output | m_axi_lite_wdata   | 32   | Data to target peripheral                                              |
+| output | m_axi_lite_wvalid | 1     | Asserted when the bridge wants to write data to target peripheral      |
+
+##### B Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | m_axi_lite_bresp    | 2     | Indicated whether the write behavior is sucessful |
+| input | m_axi_lite_bvalid | 1     | Asserted on successful write                                 |
+| output | m_axi_lite_bready   | 1     |Asserted when the bridge is available to receive new instrucion |
+
+##### AR Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | m_axi_lite_araddr    | 32     | Read data from specific offset of target peripheral |
+| input | m_axi_lite_arready | 1     | Asserted when the read address channel is available                                 |
+| output | m_axi_lite_arvalid   | 1     | Read address from target peripheral |
+
+##### R Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | m_axi_lite_rdata    | 32     | Data from target peripheral |
+| input | m_axi_lite_rresp | 2    | Indicated whether the read behavior is sucessful                      |
+| input | m_axi_lite_rvalid   | 1     |Asserted on successful read   |
+| output | m_axi_lite_rready   | 1     |Asserted when the bridge is available to receive new request  |
+
+### 2. Description
+The cpu_axiLite_bridge is a lightweight bus master optimized for non-burst, single-word peripheral accesses. The relationship between 5 channels is similar to AXI.
+
 
 Memory & Peripheral Related Diagram
 <img width="532" height="409" alt="image" src="https://github.com/user-attachments/assets/4287315a-1f5b-4515-bbdd-8e51c78c0dc5" />
