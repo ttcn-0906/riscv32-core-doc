@@ -196,7 +196,7 @@ We use **Sv32** as our virtual address design. Sv32 use two-level page to transl
 
 ### 2. Description
 
-This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Single-Port BRAM IPs. Each Cache Line size is 256 bits (32 bytes), matching the AXI4 burst width. It employs a Least Recently Used (LRU) replacement policy and a Write-back strategy to optimize bus bandwidth.
+This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Single-Port BRAM IPs. Each Cache Line size is 256 bits (32 bytes), matching the AXI4 burst width. It employs a Least Recently Used (LRU) replacement policy and a Write-back + Write-allocate strategy to optimize bus bandwidth.
 
 ## Dcache_axiBus_bridge
 
@@ -218,7 +218,7 @@ This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Sin
 | I/O    | name         | width | purpose                                                             |
 |--------|-------------|-------|---------------------------------------------------------------------|
 | output  | rm_rdy    | 1     | A handshake signal to inform the cache if it can send new instruction to the next stage |
-| output | rm_data   | 256   | Data for DRAM                                                        |
+| output | rm_data   | 256   | Data from DRAM                                                        |
 | output | rm_success | 1     | Asserted on successful read                               |
 | output  | rm_complete | 1     | Asserted when the read operation completes.                                |
 | input | rm_vld   | 1     | A handshake signal to notify the bridge that a new instruction is available    |
@@ -227,7 +227,7 @@ This is a 32KB 2-way Set-Associative Cache. The storage is implemented using Sin
 | I/O    | name         | width | purpose                                                             |
 |--------|-------------|-------|---------------------------------------------------------------------|
 | output  | wm_rdy    | 1     | A handshake signal to inform cache if it can send new instruction to the next stage |
-| output | wm_data   | 256   | Data from DRAM                                                        |
+| output | wm_data   | 256   | Data to DRAM                                                        |
 | output | wm_success | 1     | Asserted on successful write                                 |
 | output  | wm_complete | 1   |  Asserted when the write operation completes                                  |
 | input | wm_vld   | 1     | A handshake signal to notify the bridge that a new instruction is available    |
@@ -278,7 +278,7 @@ The bridge is responsible for translating the custom D Cache memory interface in
 - Handshake Protocol: The implementation strictly adheres to the AXI4 handshake rules: VALID signals never wait for READY to be asserted, preventing potential deadlocks in the system.
 - Design Philosophy: While this design prioritizes performance through independent channels, it serves as an educational reference. For simpler designs or area-constrained environments, AMD/Xilinx also suggests implementing a Single Sequence FSM to handle the channels sequentially, which reduces logic complexity at the cost of concurrency.
 
-----------------------------------------------update later--------------------------------------------
+
 ## I cache
 
 ### 1. I/O ports
@@ -289,48 +289,84 @@ The bridge is responsible for translating the custom D Cache memory interface in
 |--------|--------------------|-------|--------------------------------|
 | input  | clk                 | 1     | Timing                         |
 | input  | rst_n               | 1     | Reset dcache at low            |
-| input  | mem_init_complete_i | 1     | Inform cache if DRAM is working|
 
 #### CPU Ports
 
 | I/O    | name         | width | purpose                                                                 |
 |--------|-------------|-------|-------------------------------------------------------------------------|
-| input  | tag_i        | 19    | A number to recognize whether the data we want is on the specific address or not |
-| input  | idx_i        | 8     | To address which cache line we want                                     |
-| input  | ofs_i        | 5     | Operating a specific word in a specific data block (The last two bits must be zero) |
-| input  | invalidate_i | 1     | Invalidate specific cacheline                                           |
-| output | icache_rdy_o | 1     | Tell CPU if I-cache is available                                        |
+| input  | pc_i        | 32    | Program counter  |
+| input  | invalidate_i | 1     | Command to invalidate all cache lines                                         |
+| output | icache_rdy_o | 1     | Indicates if I-cache is ready to accept a new PC                       |
 | output | cpu_inst_o   | 32    | Output particular instruction                                           |
+| output | icache_vld_o   | 1   | Indicates the output instruction is valid                                           |
+| output | i_exception   | 1    | Indicates a fetch access fault                                           |
+
+#### Memory Ports
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output | mem_addr   | 32    | Tell DRAM which address cache wants to write or read                |
+
+##### Read
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | rm_rdy    | 1     | Indicates the AXI Bridge is ready to process a read request |
+| Output | mem_addr   | 32   | Target DRAM address for cache line refill                   |
+| input | rm_success | 1     | Confirms a successful read transaction from DRAM            |
+| input  | rm_complete | 1     | Indicates the burst read operation is finished                                |
+| input | rm_data   | 256     | The 256-bit cache line data returned from DRAM.    |
+| output | req_rm   | 1     | Request signal to read instruction from dram  |
 
 
 
-### 2. Description
-
-This is a 16kB 2-way cache. Its data storage is constructed by BRAM IP, and each block size is 32 bits. It uses FIFO as the replacement policy when a data miss occurs.
-
-
-
-#### MIG Ports
-
-| I/O    | name           | width | purpose                                      |
-|--------|----------------|-------|----------------------------------------------|
-| output | app_addr       | 27    | DRAM address (128MB DRAM → 27 bits)         |
-| output | app_cmd        | 1     | Decide read or write                          |
-| output | app_en         | 1     | Command enable                                |
-| input  | app_rdy        | 32    | MIG is ready to accept new command           |
-| input  | init_mem_rdy   | 1     | High after DRAM starts working               |
-| output | app_wdf_data   | 128   | Data to write into DRAM                        |
-| output | app_wdf_end    | 1     | High for 1 cycle at end of data             |
-| output | app_wdf_wren   | 1     | Write command valid                           |
-| input  | app_wdf_rdy    | 1     | DRAM can accept write                         |
-| output | app_wdf_mask   | 1     | Which bytes to write (default: all zeros)    |
-| input  | app_rd_data    | 128   | Data from DRAM                                |
-| input  | app_rd_data_end| 1     | High when data read back from DRAM           |
-| input  | app_rd_data_valid | 1  | Handshake indicating data from DRAM is valid |
 
 ### 2. Description
 
-This interface resolves competition between I-cache and D-cache and also serves as a data channel when the CPU is first activated(Current version).
+This is a 16KB 2-way Set-Associative Cache. The storage uses BRAM IPs, with a Cache Line size of 256 bits (32 bytes). It employs a First-In-First-Out (FIFO) replacement policy. To support fast context switching and software reloads, it integrates a DFF-based Valid array that allows for a 1-cycle global invalidation via the invalidate_i signal.
+
+## Icache_axiBus_bridge
+
+### 1. I/O port
+
+#### System Ports
+
+| I/O    | name                 | width | purpose                        |
+|--------|--------------------|-------|--------------------------------|
+| input  | aclk                 | 1     | Timing                         |
+| input  | aresetn               | 1     | Reset at low            |
+
+#### Instruction Cache Ports
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| Input | mem_addr   | 32    | Target address for the instruction fetch               |
+| output  | rm_rdy    | 1     | A handshake signal to inform the cache if it can send new instruction to the bridge |
+| output | rm_data   | 256   | Instruction from DRAM                                                        |
+| output | rm_success | 1     | Asserted on successful read                               |
+| output  | rm_complete | 1     | Asserted when the read operation completes.                                |
+| input | req_rm   | 1     | A handshake signal to inform the bridge the I cache submits a new request   |
+
+
+#### AXI Ports(Only important ports)
+##### AR Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| output  | M_AXI_ARADDR    | 32     |  Tell DRAM which address cache wants to read |
+| input | M_AXI_ARREADY | 1     | Asserted when the read address channel is available                                 |
+| output | M_AXI_ARVALID   | 1     |Asserted when the bridge wants to read address from dram |
+
+##### R Channel
+| I/O    | name         | width | purpose                                                             |
+|--------|-------------|-------|---------------------------------------------------------------------|
+| input  | M_AXI_RDATA    | 256     | Data from DRAM |
+| input | M_AXI_RRESP | 2    | Indicated whether the read behavior is sucessful                      |
+| input | M_AXI_RLAST   | 1     |Asserted when the data is the last data block of a burst  |
+| input | M_AXI_RVALID   | 1     |Asserted on successful read   |
+| output | M_AXI_RREADY   | 1     |Asserted when the bridge is available to receive new instruction  |
+
+### 2. Description
+The Icache_axiBus_bridge is designed as a lightweight, read-only AXI4 Master to serve the I-cache's refill requests. The axi behavior is as same as those in the Dcache_axiBus_Bridge part.
+
+
+
 
 ## Native MIG
 
