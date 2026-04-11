@@ -366,8 +366,7 @@ The Icache_axiBus_bridge is designed as a lightweight, read-only AXI4 Master to 
 ----------------------------------------Update Later-----------------------------------------
 Rest: CPU_axi_bridge
 
+Memory & Peripheral Related Diagram
+<img width="532" height="409" alt="image" src="https://github.com/user-attachments/assets/4287315a-1f5b-4515-bbdd-8e51c78c0dc5" />
 
 
-
-### 2. Discription
-The behaviors of MIG are deicded by the FPGA board that you want to use. 
